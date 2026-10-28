@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Tab Display</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { position: absolute; touch-action: none; }
+  #status { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 16px; color: #ddd; font: 18px system-ui, sans-serif; text-align: center; padding: 16px; }
+  #status button { font: inherit; padding: 12px 24px; border-radius: 10px; border: 0; background: #2f6fed; color: #fff; }
+  #hud { position: absolute; top: 6px; right: 8px; color: #8f8; font: 12px monospace; pointer-events: none; display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="status"><div id="msg">Menyambung ke Mac...</div><button id="go">Mulai layar penuh</button></div>
+<div id="hud"></div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+const statusEl = document.getElementById('status'), msgEl = document.getElementById('msg'), hud = document.getElementById('hud');
+const say = (t) => { msgEl.textContent = t; statusEl.style.display = 'flex'; };
+
+if (!('VideoDecoder' in window)) {
+  say('WebCodecs tidak tersedia. Buka lewat http://localhost:8080 (adb reverse), bukan IP Wi-Fi.');
+  throw new Error('no WebCodecs');
+}
+
+function goFullscreen() {
+  document.documentElement.requestFullscreen?.().catch(() => {});
+  keepAwake();
+}
+document.getElementById('go').onclick = goFullscreen;
+
+// Stop the tablet from sleeping while it is used as a monitor. The lock is dropped
+// whenever the page is hidden, so take it again when it comes back.
+let wakeLock = null;
+async function keepAwake() {
+  if (wakeLock || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) { console.warn('wake lock', e); }
+}
+document.addEventListener('visibilitychange', keepAwake);
+keepAwake();
+document.addEventListener('keydown', (e) => { if (e.key === 'h') hud.style.display = hud.style.display ? '' : 'block'; });
+
+// --- layout: fit the remote frame inside the viewport, keep aspect ratio ---
+let frameW = 2560, frameH = 1600, rect = { x: 0, y: 0, w: 1, h: 1 };
+function layout() {
+  const vw = innerWidth, vh = innerHeight, s = Math.min(vw / frameW, vh / frameH);
+  rect = { w: frameW * s, h: frameH * s, x: (vw - frameW * s) / 2, y: (vh - frameH * s) / 2 };
+  Object.assign(canvas.style, { left: rect.x + 'px', top: rect.y + 'px', width: rect.w + 'px', height: rect.h + 'px' });
+}
+// Tell the Mac when the tablet turns, so the virtual display can switch to portrait.
+let lastPortrait = null, orientTimer = null;
+function reportOrientation() {
+  const portrait = innerHeight > innerWidth;
+  if (portrait !== lastPortrait && ws?.readyState === 1) { lastPortrait = portrait; send({ t: 'orient', portrait }); }
+}
+addEventListener('resize', () => { layout(); clearTimeout(orientTimer); orientTimer = setTimeout(reportOrientation, 300); });
+
+// --- video ---
+let ws, decoder = null, codec = null, needKey = true, frames = 0, lastLat = 0;
+function configure(cfg) {
+  if (decoder && decoder.state === 'configured' && codec === cfg.codec && frameW === cfg.width && frameH === cfg.height) return;
+  try { decoder?.close(); } catch {}
+  codec = cfg.codec; frameW = canvas.width = cfg.width; frameH = canvas.height = cfg.height; layout();
+  decoder = new VideoDecoder({
+    output: (frame) => { ctx.drawImage(frame, 0, 0); frame.close(); frames++; statusEl.style.display = 'none'; },
+    error: (e) => { console.error(e); decoder = null; codec = null; send({ t: 'key' }); },
+  });
+  decoder.configure({ codec: cfg.codec, optimizeForLatency: true, hardwareAcceleration: 'prefer-hardware' });
+  needKey = true;
+}
+
+function connect() {
+  ws = new WebSocket(`ws://${location.hostname}:8081`);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => { say('Terhubung, menunggu gambar...'); lastPortrait = null; reportOrientation(); };
+  ws.onclose = () => { say('Koneksi putus, mencoba lagi...'); setTimeout(connect, 1000); };
+  ws.onmessage = (ev) => {
+    if (typeof ev.data === 'string') { const m = JSON.parse(ev.data); if (m.type === 'config') configure(m); return; }
+    if (!decoder || decoder.state !== 'configured') return;
+    const dv = new DataView(ev.data), key = (dv.getUint8(0) & 1) === 1;
+    if (needKey && !key) return;
+    needKey = false;
+    decoder.decode(new EncodedVideoChunk({ type: key ? 'key' : 'delta', timestamp: Number(dv.getBigInt64(1)), data: new Uint8Array(ev.data, 9) }));
+  };
+}
+const send = (o) => { if (ws?.readyState === 1) ws.send(JSON.stringify(o)); };
+connect();
+setInterval(() => { hud.textContent = `${frames} fps  queue ${decoder?.decodeQueueSize ?? '-'}  ${codec ?? ''}`; frames = 0; }, 1000);
+
+// --- input ---
+// Finger: tap = click, move past SLOP = drag, hold still = right click,
+//         2 fingers = scroll, touching the bottom edge or a 3-finger tap = show Dock.
+// S Pen / mouse: press is immediate (so drawing feels direct), side button = right click,
+//         hover moves the cursor.
+const LONG_PRESS_MS = 500, SLOP = 10, DOCK_EDGE_PX = 16;
+const pointers = new Map();
+let mode = null; // null | 'pending' | 'drag' | 'scroll' | 'done'
+let start = null, pressTimer = null, button = 'left', lastMid = null;
+const norm = (e) => ({ x: Math.min(1, Math.max(0, (e.clientX - rect.x) / rect.w)), y: Math.min(1, Math.max(0, (e.clientY - rect.y) / rect.h)) });
+const mid = () => { const p = [...pointers.values()]; return { x: p.reduce((s, q) => s + q.x, 0) / p.length, y: p.reduce((s, q) => s + q.y, 0) / p.length }; };
+const click = (b, pos) => { send({ t: 'down', b, ...pos }); send({ t: 'up', b, ...pos }); };
+
+// The overlay (and its button) hides on the first frame, so the first tap outside
+// fullscreen enters fullscreen instead of clicking. For touch, Chrome only counts
+// pointerup as a user gesture, so the request happens there.
+let fsTap = false;
+canvas.addEventListener('pointerdown', (e) => {
+  if (!document.fullscreenElement) { fsTap = true; return; }
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (pointers.size === 1) {
+    if (e.pointerType === 'touch' && e.clientY >= rect.y + rect.h - DOCK_EDGE_PX) {
+      // Like pushing a mouse against the bottom of the screen: reveals an auto-hidden Dock.
+      send({ t: 'dock' });
+      mode = 'done';
+    } else if (e.pointerType === 'touch') {
+      // Wait to see whether this becomes a tap, a drag or a long press.
+      mode = 'pending';
+      start = { pos: norm(e), x: e.clientX, y: e.clientY };
+      pressTimer = setTimeout(() => { if (mode === 'pending') { click('right', start.pos); mode = 'done'; } }, LONG_PRESS_MS);
+    } else {
+      button = (e.button === 2 || e.button === 5 || (e.buttons & 2)) ? 'right' : 'left';
+      mode = 'drag';
+      send({ t: 'down', b: button, ...norm(e) });
+    }
+    return;
+  }
+
+  // A second/third finger cancels whatever the first one was doing.
+  clearTimeout(pressTimer);
+  if (mode === 'drag') send({ t: 'up', b: button, ...norm(e) });
+  if (pointers.size === 2) { mode = 'scroll'; lastMid = mid(); }
+  if (pointers.size === 3) { send({ t: 'dock' }); mode = 'done'; }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId)) {
+    if (e.pointerType !== 'touch') send({ t: 'move', ...norm(e) }); // S Pen hover
+    return;
+  }
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (mode === 'pending') {
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < SLOP) return;
+    clearTimeout(pressTimer);
+    mode = 'drag'; button = 'left';
+    send({ t: 'down', b: 'left', ...start.pos });
+  }
+  if (mode === 'drag') {
+    send({ t: 'move', ...norm(e) });
+  } else if (mode === 'scroll' && pointers.size === 2) {
+    const m = mid(), k = frameW / rect.w / 2; // remote points per CSS px (HiDPI frame is 2x points)
+    send({ t: 'scroll', dx: (m.x - lastMid.x) * k, dy: (m.y - lastMid.y) * k });
+    lastMid = m;
+  }
+});
+const end = (e) => {
+  if (fsTap) { fsTap = false; if (e.type === 'pointerup') goFullscreen(); return; }
+  if (!pointers.delete(e.pointerId)) return;
+  clearTimeout(pressTimer);
+  if (mode === 'pending' && e.type === 'pointerup') click('left', start.pos);
+  else if (mode === 'drag') send({ t: 'up', b: button, ...norm(e) });
+  if (pointers.size === 0) mode = null;
+  else if (mode === 'pending' || mode === 'drag') mode = 'done';
+};
+canvas.addEventListener('pointerup', end);
+canvas.addEventListener('pointercancel', end);
+layout();
+</script>
+</body>
+</html>
