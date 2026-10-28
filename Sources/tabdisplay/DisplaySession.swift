@@ -30,7 +30,7 @@ final class DisplaySession {
         guard display == nil else { return }
         guard CGPreflightScreenCaptureAccess() else {
             CGRequestScreenCaptureAccess()
-            throw Self.error("Screen Recording permission is needed. Allow TabDisplay in System Settings > Privacy & Security > Screen Recording, then quit and reopen TabDisplay.")
+            throw Self.error("Screen Recording not allowed. Allow (or remove and re-add) TabDisplay in Privacy & Security, then reopen.")
         }
 
         guard let display = VirtualDisplay(name: "TabDisplay", width: longSide, height: shortSide, hiDPI: true) else {

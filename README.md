@@ -94,10 +94,21 @@ When TabDisplay first starts, macOS asks for two permissions in **System Setting
 
 | Permission | Why | Without it |
 |---|---|---|
-| **Screen Recording** (may be called *Screen & System Audio Recording*) | To capture the virtual display | Nothing is streamed. After granting it, **quit and reopen** TabDisplay. |
+| **Screen Recording** | To capture the virtual display | Nothing is streamed. After granting it, **quit and reopen** TabDisplay. |
 | **Accessibility** | To turn touches into mouse clicks | You see the screen, but touches do nothing |
 
-> **After updating TabDisplay**, macOS may treat the new version as a different app, because it is not Developer ID signed. If touch or video stops working after an update, remove TabDisplay from both lists with the **−** button, then add it again.
+The list names differ between macOS versions: *Screen Recording* or *Screen & System Audio Recording* on macOS 14–26, and a single **Device Control and Data Access** list on macOS 27.
+
+#### After reinstalling or updating TabDisplay
+
+TabDisplay isn't signed with an Apple Developer ID, so macOS recognises it by the exact build, not by its name. A new version or a fresh install counts as a different app, **even though the old TabDisplay toggle still shows as on**. If the menu says *Screen Recording not allowed*, or the tablet stays on *Koneksi putus, mencoba lagi…*:
+
+1. Quit TabDisplay from the menu bar.
+2. In **System Settings → Privacy & Security**, open the permission list (see above), select **TabDisplay** and click **−**. Do this in every list that has TabDisplay.
+3. Click **+**, choose **/Applications/TabDisplay.app**, and turn it on.
+4. Open TabDisplay again.
+
+Turning the old toggle off and on is not enough. It has to be removed and added again.
 
 ### 3. Connect
 
@@ -158,7 +169,8 @@ Wi-Fi adds latency and depends on your network. 5 GHz Wi-Fi close to the router 
 | Menu says **No tablet** | Check that USB debugging is allowed on the tablet. Running `adb devices` should list the tablet as `device`, not `unauthorized`. |
 | Page says **WebCodecs not available** | You opened the Mac's IP address. Use `http://localhost:8080`. |
 | Page loads but stays black | Grant **Screen Recording**, then quit and reopen TabDisplay |
-| Video works, touch doesn't | Grant **Accessibility** (or remove and re-add it after an update) |
+| Menu says **Screen Recording not allowed** even though the toggle is on, or nothing works after an update/reinstall | Remove TabDisplay with **−** and add it again. See [After reinstalling or updating](#after-reinstalling-or-updating-tabdisplay). |
+| Video works, touch doesn't | Grant **Accessibility** (after an update: remove and add it again) |
 | **Port 8080 is unavailable** | Another TabDisplay, or another app using that port, is running. Quit it. |
 | Tablet screen turns off | The page keeps the screen awake while it is visible. As a fallback, turn on **Developer options → Stay awake**. |
 | Stuttering over Wi-Fi | Move closer to the router, use 5 GHz, or use USB |

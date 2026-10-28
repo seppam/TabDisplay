@@ -94,10 +94,21 @@ Waktu TabDisplay pertama kali jalan, macOS meminta dua izin di **System Settings
 
 | Izin | Untuk apa | Kalau nggak diberikan |
 |---|---|---|
-| **Screen Recording** (bisa bernama *Screen & System Audio Recording*) | Merekam layar virtual | Nggak ada gambar yang dikirim. Setelah memberi izin, **quit lalu buka lagi** TabDisplay. |
+| **Screen Recording** | Merekam layar virtual | Nggak ada gambar yang dikirim. Setelah memberi izin, **quit lalu buka lagi** TabDisplay. |
 | **Accessibility** | Mengubah sentuhan jadi klik mouse | Gambar tampil, tapi sentuhan nggak berpengaruh |
 
-> **Setelah update TabDisplay**, macOS bisa menganggap versi baru sebagai app yang berbeda, karena app-nya nggak ditandatangani Developer ID. Kalau sentuhan atau video berhenti bekerja setelah update, hapus TabDisplay dari kedua daftar izin dengan tombol **−**, lalu tambahkan lagi.
+Nama daftarnya beda-beda tergantung versi macOS: *Screen Recording* atau *Screen & System Audio Recording* di macOS 14–26, dan satu daftar **Device Control and Data Access** di macOS 27.
+
+#### Setelah install ulang atau update TabDisplay
+
+TabDisplay nggak ditandatangani dengan Apple Developer ID, jadi macOS mengenalinya dari build-nya, bukan dari namanya. Versi baru atau hasil install ulang dianggap app yang berbeda, **walaupun toggle TabDisplay yang lama masih terlihat menyala**. Kalau menu menampilkan *Screen Recording not allowed*, atau tablet terus menampilkan *Koneksi putus, mencoba lagi…*:
+
+1. Quit TabDisplay dari menu bar.
+2. Di **System Settings → Privacy & Security**, buka daftar izinnya (lihat di atas), pilih **TabDisplay**, lalu klik **−**. Lakukan di setiap daftar yang berisi TabDisplay.
+3. Klik **+**, pilih **/Applications/TabDisplay.app**, lalu nyalakan.
+4. Buka TabDisplay lagi.
+
+Mematikan lalu menyalakan toggle yang lama nggak cukup. TabDisplay harus dihapus lalu ditambahkan lagi.
 
 ### 3. Sambungkan
 
@@ -158,7 +169,8 @@ Wi-Fi menambah jeda dan tergantung kualitas jaringan. Paling bagus pakai Wi-Fi 5
 | Menu menampilkan **No tablet** | Pastikan USB debugging sudah diizinkan di tablet. `adb devices` harus menampilkan tablet dengan status `device`, bukan `unauthorized`. |
 | Halaman menampilkan **WebCodecs tidak tersedia** | Kamu membuka IP Mac. Pakai `http://localhost:8080`. |
 | Halaman terbuka tapi tetap hitam | Berikan izin **Screen Recording**, lalu quit dan buka lagi TabDisplay |
-| Video jalan, sentuhan nggak | Berikan izin **Accessibility** (atau hapus lalu tambahkan lagi setelah update) |
+| Menu menampilkan **Screen Recording not allowed** padahal toggle-nya menyala, atau nggak jalan sama sekali setelah update/install ulang | Hapus TabDisplay dengan **−** lalu tambahkan lagi. Lihat [Setelah install ulang atau update](#setelah-install-ulang-atau-update-tabdisplay). |
+| Video jalan, sentuhan nggak | Berikan izin **Accessibility** (setelah update: hapus lalu tambahkan lagi) |
 | **Port 8080 is unavailable** | Ada TabDisplay lain, atau app lain yang memakai port itu, sedang jalan. Tutup dulu. |
 | Layar tablet mati sendiri | Halaman menjaga layar tetap menyala selama tampil. Sebagai cadangan, nyalakan **Developer options → Stay awake**. |
 | Patah-patah lewat Wi-Fi | Mendekat ke router, pakai 5 GHz, atau pakai USB |
