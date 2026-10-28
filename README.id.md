@@ -97,7 +97,7 @@ Waktu TabDisplay pertama kali jalan, macOS meminta dua izin di **System Settings
 | **Screen Recording** | Merekam layar virtual | Nggak ada gambar yang dikirim. Setelah memberi izin, **quit lalu buka lagi** TabDisplay. |
 | **Accessibility** | Mengubah sentuhan jadi klik mouse | Gambar tampil, tapi sentuhan nggak berpengaruh |
 
-Nama daftarnya beda-beda tergantung versi macOS: *Screen Recording* atau *Screen & System Audio Recording* di macOS 14–26, dan satu daftar **Device Control and Data Access** di macOS 27.
+Nama daftarnya beda-beda tergantung versi macOS. Screen Recording bisa bernama **Screen & System Audio Recording**. Di macOS 27, Accessibility muncul sebagai **Device Control and Data Access**.
 
 #### Setelah install ulang atau update TabDisplay
 

@@ -97,7 +97,7 @@ When TabDisplay first starts, macOS asks for two permissions in **System Setting
 | **Screen Recording** | To capture the virtual display | Nothing is streamed. After granting it, **quit and reopen** TabDisplay. |
 | **Accessibility** | To turn touches into mouse clicks | You see the screen, but touches do nothing |
 
-The list names differ between macOS versions: *Screen Recording* or *Screen & System Audio Recording* on macOS 14–26, and a single **Device Control and Data Access** list on macOS 27.
+The list names differ between macOS versions. Screen Recording may be called **Screen & System Audio Recording**. On macOS 27, Accessibility appears as **Device Control and Data Access**.
 
 #### After reinstalling or updating TabDisplay
 
