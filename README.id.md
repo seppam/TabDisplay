@@ -125,14 +125,16 @@ Keyboard dan mouse yang tersambung ke Mac bisa dipakai di layar tablet seperti d
 
 1. Pastikan Mac dan tablet ada di jaringan Wi-Fi yang sama.
 2. Di tablet, buka **Developer options → Wireless debugging**, nyalakan, lalu ketuk **Pair device with pairing code**.
-3. Di Mac, pair pakai IP, port, dan kode yang tampil di tablet:
+3. Di Mac, pair pakai **IP address & port** yang tampil di popup pairing, lalu ketik **pairing code** 6 digit saat diminta:
    ```bash
-   adb pair 192.168.1.23:37000
+   adb pair <ip-tablet>:<port-pairing>
    ```
-4. Sambungkan pakai IP dan port yang tampil di layar utama **Wireless debugging**. Port ini berbeda dari port pairing:
+   Contoh: `adb pair 192.168.1.23:37451`. Pakai angka dari tablet kamu sendiri.
+4. Tutup popup-nya. Layar utama **Wireless debugging** menampilkan **IP address & port** yang lain. Port di sini *berbeda* dari port pairing. Sambungkan pakai port ini:
    ```bash
-   adb connect 192.168.1.23:41000
+   adb connect <ip-tablet>:<port-connect>
    ```
+   Contoh: `adb connect 192.168.1.23:41023`.
 5. Cabut kabel USB. TabDisplay akan menemukan koneksi wireless dalam beberapa detik.
 
 Wi-Fi menambah jeda dan tergantung kualitas jaringan. Paling bagus pakai Wi-Fi 5 GHz yang dekat dengan router. Pairing-nya diingat, tapi port connect berubah setiap wireless debugging dinyalakan ulang. Kalau itu terjadi, ulangi langkah 4.
