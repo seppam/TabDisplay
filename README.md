@@ -10,6 +10,8 @@ Use an Android tablet as an extra display for your Mac, like Sidecar but for And
 - Works over a USB cable, or over Wi-Fi with wireless debugging
 - Lives in the menu bar
 
+![macOS desktop extended onto a Galaxy Tab S8, with a note handwritten using the S Pen](docs/images/tablet.png)
+
 Tested on a Galaxy Tab S8 (Android 16, Chrome 156) with macOS 27 on Apple Silicon. Any Android device with a recent Chrome should work.
 
 ## How it works
@@ -100,6 +102,9 @@ When TabDisplay first starts, macOS asks for two permissions in **System Setting
 ### 3. Connect
 
 1. Open TabDisplay. An iPad-shaped icon appears in the menu bar, and the menu shows your tablet's name.
+
+   <img src="docs/images/menu.png" alt="TabDisplay menu bar menu" width="420">
+
 2. On the tablet, open Chrome and go to **`http://localhost:8080`**.
 3. **Tap once** to go fullscreen. That first tap is not sent to the Mac.
 4. On the Mac, open **TabDisplay menu → Arrange Displays…** and drag the display to match where the tablet sits on your desk.
@@ -125,7 +130,13 @@ A keyboard or mouse attached to the Mac works on the tablet's display like on an
 
 1. Put the Mac and the tablet on the same Wi-Fi network.
 2. On the tablet, go to **Developer options → Wireless debugging**, turn it on, and tap **Pair device with pairing code**.
+
+   ![Wireless debugging screen: the connect IP address & port and the pairing button](docs/images/wireless-debugging.png)
+
 3. On the Mac, pair using the **IP address & port** shown in the pairing popup, then type the 6-digit **pairing code** when asked:
+
+   ![Pairing popup with the pairing code and the pairing IP address & port](docs/images/wireless-pairing.png)
+
    ```bash
    adb pair <tablet-ip>:<pairing-port>
    ```

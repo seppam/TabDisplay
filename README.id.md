@@ -10,6 +10,8 @@ Jadikan tablet Android sebagai layar tambahan untuk Mac, seperti Sidecar tapi un
 - Lewat kabel USB, atau Wi-Fi dengan wireless debugging
 - Berjalan dari menu bar
 
+![Desktop macOS diperluas ke Galaxy Tab S8, dengan catatan tulisan tangan pakai S Pen](docs/images/tablet.png)
+
 Sudah diuji di Galaxy Tab S8 (Android 16, Chrome 156) dengan macOS 27 di Apple Silicon. Perangkat Android lain dengan Chrome versi baru seharusnya juga bisa.
 
 ## Cara kerjanya
@@ -100,6 +102,9 @@ Waktu TabDisplay pertama kali jalan, macOS meminta dua izin di **System Settings
 ### 3. Sambungkan
 
 1. Buka TabDisplay. Ikon berbentuk iPad muncul di menu bar, dan menunya menampilkan nama tablet kamu.
+
+   <img src="docs/images/menu.png" alt="Menu TabDisplay di menu bar" width="420">
+
 2. Di tablet, buka Chrome lalu masuk ke **`http://localhost:8080`**.
 3. **Ketuk sekali** untuk masuk layar penuh. Ketukan pertama itu nggak dikirim ke Mac.
 4. Di Mac, buka **menu TabDisplay → Arrange Displays…**, lalu geser layarnya sesuai posisi tablet di meja.
@@ -125,7 +130,13 @@ Keyboard dan mouse yang tersambung ke Mac bisa dipakai di layar tablet seperti d
 
 1. Pastikan Mac dan tablet ada di jaringan Wi-Fi yang sama.
 2. Di tablet, buka **Developer options → Wireless debugging**, nyalakan, lalu ketuk **Pair device with pairing code**.
+
+   ![Layar Wireless debugging: IP address & port untuk connect dan tombol pairing](docs/images/wireless-debugging.png)
+
 3. Di Mac, pair pakai **IP address & port** yang tampil di popup pairing, lalu ketik **pairing code** 6 digit saat diminta:
+
+   ![Popup pairing berisi pairing code dan IP address & port untuk pairing](docs/images/wireless-pairing.png)
+
    ```bash
    adb pair <ip-tablet>:<port-pairing>
    ```
