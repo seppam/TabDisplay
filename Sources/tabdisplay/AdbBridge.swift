@@ -12,6 +12,7 @@ final class AdbBridge {
     private let queue = DispatchQueue(label: "adb")
     private var timer: DispatchSourceTimer?
     private var models: [String: String] = [:]
+    private var hardwareIDs: [String: String] = [:]
 
     init(ports: [UInt16]) {
         self.ports = ports
@@ -47,16 +48,31 @@ final class AdbBridge {
         }
         guard !serials.isEmpty else { return report(.noDevice) }
 
-        let devices = serials.map { serial -> Device in
+        var devices: [Device] = []
+        var seen: [String: Int] = [:]
+        for serial in serials {
             // Reapplied every poll: it is idempotent and is lost whenever the adb server restarts.
             for port in ports { _ = run(adb, ["-s", serial, "reverse", "tcp:\(port)", "tcp:\(port)"]) }
             if models[serial] == nil {
-                let model = run(adb, ["-s", serial, "shell", "getprop", "ro.product.model"]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let model = getprop(adb, serial, "ro.product.model")
                 models[serial] = model.isEmpty ? serial : model
+                let hardware = getprop(adb, serial, "ro.serialno")
+                hardwareIDs[serial] = hardware.isEmpty ? serial : hardware
             }
-            return Device(serial: serial, model: models[serial]!)
+            let device = Device(serial: serial, model: models[serial]!)
+            // Wireless debugging often lists one tablet twice (IP:port and mDNS name): show it once, preferring USB.
+            if let index = seen[hardwareIDs[serial]!] {
+                if devices[index].isWireless && !device.isWireless { devices[index] = device }
+            } else {
+                seen[hardwareIDs[serial]!] = devices.count
+                devices.append(device)
+            }
         }
         report(.connected(devices))
+    }
+
+    private func getprop(_ adb: String, _ serial: String, _ key: String) -> String {
+        run(adb, ["-s", serial, "shell", "getprop", key]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func report(_ status: Status) {
